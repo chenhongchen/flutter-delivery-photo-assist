@@ -62,6 +62,7 @@ cd delivery_photo_assist
 python3 -m venv .venv
 .venv/bin/pip install onnx==1.18.0
 .venv/bin/python scripts/prepare_demo_models.py
+# 仅在 macOS 编译 iOS 时执行，Android 跳过下面这行
 swift run --package-path scripts/xcode_config DeliveryExampleConfig example/ios/Runner.xcodeproj
 cd example
 flutter pub get
