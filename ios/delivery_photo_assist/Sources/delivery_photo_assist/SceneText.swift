@@ -49,4 +49,3 @@ enum SceneText {
     return self.image(image)
   }
 }
-

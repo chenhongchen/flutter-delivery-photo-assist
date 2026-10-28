@@ -2,6 +2,7 @@ name: delivery_photo_assist
 description: 司机配送双照片拍摄辅助，提供取景、清晰度、相册与可替换的本地 PP-PicoDet 推理。
 version: 0.1.0
 publish_to: none
+repository: https://github.com/zerowangyu/flutter-delivery-photo-assist
 environment:
   sdk: ^3.12.2
   flutter: '>=3.44.0'

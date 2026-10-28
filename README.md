@@ -2,7 +2,7 @@
 
 一个面向 iOS / Android 的 Flutter 插件：第一张拍清配送物品及其放置位置，第二张扩大环境取景。提供清晰度、取景变化和物体参考提示；任何状态均可拍照。组件不负责订单、上传或配送完成状态。
 
-当前状态：**内部验证，计划上传 GitHub 私有仓库，暂不公开发布。**
+当前状态：**内部验证，GitHub 私有仓库，暂不公开发布。**
 
 当前版本：**0.1.0 接入预览**。使用官方 Flutter camera + ONNX Runtime，可接入 PP-PicoDet-S / XS。源码不依赖 Ultralytics。配送纸箱、软袋、保温袋、整箱饮料、成提水和大件物品的专项效果，需要另外训练并验证业务模型。附带的本机演示准备脚本使用 COCO 通用权重，不能用于证明这些类别已被识别。
 
@@ -23,6 +23,8 @@
 远景比较使用 OpenCV Native Assets，构建机须安装 CMake 和 Ninja。Android 可使用 Android SDK 自带工具。项目内包含 dartcv4 2.2.2 的 Apache-2.0 修改版：默认启用 features2d/calib3d，并修正 Apple 目标构建，宿主无需复制额外 hooks 配置。
 
 ## 接入
+
+仓库：https://github.com/zerowangyu/flutter-delivery-photo-assist （私有，需要读取权限）。业务训练权重、图片和数据集独立存放，不在仓库中。
 
 ```yaml
 dependencies:
