@@ -1,0 +1,22 @@
+name: delivery_photo_assist_example
+description: 配送拍照辅助插件接入示例。
+version: 0.1.0+1
+publish_to: none
+environment:
+  sdk: ^3.12.2
+dependencies:
+  flutter:
+    sdk: flutter
+  delivery_photo_assist:
+    path: ../
+  path_provider: ^2.1.5
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/

@@ -1,0 +1,79 @@
+# Flutter 配送拍照辅助（内部验证）
+
+一个面向 iOS / Android 的 Flutter 插件：第一张拍清配送物品及其放置位置，第二张扩大环境取景。提供清晰度、取景变化和物体参考提示；任何状态均可拍照。组件不负责订单、上传或配送完成状态。
+
+当前状态：**内部验证，计划上传 GitHub 私有仓库，暂不公开发布。**
+
+当前版本：**0.1.0 接入预览**。使用官方 Flutter camera + ONNX Runtime，可接入 PP-PicoDet-S / XS。源码不依赖 Ultralytics。配送纸箱、软袋、保温袋、整箱饮料、成提水和大件物品的专项效果，需要另外训练并验证业务模型。附带的本机演示准备脚本使用 COCO 通用权重，不能用于证明这些类别已被识别。
+
+## 已有能力
+
+- 两张照片按步骤拍摄，第二张可对照第一张；拍齐后直接返回本地文件。
+- 相对取景扩大、模糊、过暗、过亮提示；不测量米数、不验证地址。
+- 状态色提示、固定布局、识别框默认关闭、相册入口。
+- 默认使用后置广角 1×，支持设备允许范围内的按钮和双指缩放。当前不切换到独立超广角镜头。
+- 默认分析上限每秒 3 次；省电、发热、低内存或分析过慢时自动降低频率、暂停 OCR/远景比较，必要时只保留画质参考。
+- 取景建议不阻止快门与保存，没有拍后合规复核、摆放确认或倾倒检测。
+- 本机处理，模型加载失败时仍可拍照；诊断报告把“拍齐两张”与识别结论分开。
+
+## 平台和工具
+
+当前验证环境为 Flutter 3.44 / Dart 3.12。iOS 最低 **16.0**（本版 ONNX Runtime 包的要求），Android 最低 **API 24**。更早 iOS 版本需要单独更换/适配推理运行时；本版不声称支持。
+
+远景比较使用 OpenCV Native Assets，构建机须安装 CMake 和 Ninja。Android 可使用 Android SDK 自带工具。项目内包含 dartcv4 2.2.2 的 Apache-2.0 修改版：默认启用 features2d/calib3d，并修正 Apple 目标构建，宿主无需复制额外 hooks 配置。
+
+## 接入
+
+```yaml
+dependencies:
+  delivery_photo_assist:
+    path: /本机路径/flutter-delivery-photo-assist
+```
+
+在宿主 iOS 的 Info.plist 添加 `NSCameraUsageDescription`、`NSPhotoLibraryUsageDescription`。宿主保持自己的签名配置，部署目标至少 iOS 16。Android 声明相机权限；系统相册选择沿用 image_picker。照片不需要写入系统相册。
+
+```dart
+import 'package:delivery_photo_assist/delivery_photo_assist.dart';
+
+final model = await PicoDetModel.fromFiles(
+  modelPath: localModelPath,
+  manifestPath: localManifestPath,
+);
+if (!context.mounted) return;
+final result = await DeliveryPhotoAssist.capture(context, model: model);
+if (result == null) return; // 用户取消
+// result.parcelPhoto / environmentPhoto 是本地 File。
+// 复用宿主已有上传、订单和配送完成流程。
+```
+
+`capture` 返回成功后，宿主负责文件留存及上传后清理；取消时只删除插件本次创建的会话副本，相册原图不会被删除。不要把本地文件路径当作服务器 URL。宿主横竖屏策略由宿主管理；示例采用竖屏，当前拍摄界面按竖屏设计。
+
+完整输入输出、类别命名和训练交付要求见 [模型接入约定](docs/模型接入约定.md)。权重不含在组件工程中，可使用授权的自训模型；业务影像也不包含在仓库中。
+
+## 运行示例
+
+仓库保持私有，需要仓库读取权限。运行插件自身 example 时，克隆目录使用 `delivery_photo_assist`，避开 Flutter 插件示例在 SwiftPM 下按目录名解析的冲突。先在本机准备官方通用演示模型（只下载模型，无照片上传）：
+
+```bash
+git clone https://github.com/zerowangyu/flutter-delivery-photo-assist.git delivery_photo_assist
+cd delivery_photo_assist
+python3 -m venv .venv
+.venv/bin/pip install onnx==1.18.0
+.venv/bin/python scripts/prepare_demo_models.py
+swift run --package-path scripts/xcode_config DeliveryExampleConfig example/ios/Runner.xcodeproj
+cd example
+flutter pub get
+flutter run
+```
+
+`xcode_config` 通过 XcodeProj API 设置 iOS 16、清除模板个人签名团队并移除重复的本地 SwiftPM 引用。安装真机时在 Xcode 选择自己的开发团队。项目未包含证书、描述文件或私人设备信息。Android 发布到商店须使用宿主自己的正式签名。
+
+示例首页可选 S 或 XS。绿色表示当前建议较合适，红色表示需要注意，黄色表示待确认，均不限制拍摄。正式接入仍建议保留旧版相机作为设置项和异常回退。
+
+## 验证与边界
+
+[验证记录](docs/验证记录.md) 记载真实执行结果；没有实测的数据不作为性能承诺。远景比较依赖共同视觉特征，纯墙面、玻璃反光、遮挡或大角度变化可能无法匹配。文字、物体检测和清晰度均为建议，不能证明地址正确、物品齐全或客户一定能找回。
+
+## 许可
+
+组件原创代码采用 Apache-2.0，可在遵守声明要求的情况下用于闭源 APP，无需为该代码购买商业授权。第三方依赖、权重和训练数据各自遵循其许可，详见 [第三方声明](THIRD_PARTY_NOTICES.md)。代码开源不等于业务照片和模型必须公开。

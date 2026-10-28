@@ -1,0 +1,50 @@
+[
+  {
+    "scenario": "synthetic bag candidate with uncertain context",
+    "stage": "parcel",
+    "objects": [
+      {
+        "label": "insulated_bag",
+        "confidence": 0.6,
+        "box": [
+          0.35,
+          0.4,
+          0.65,
+          0.7
+        ]
+      }
+    ]
+  },
+  {
+    "scenario": "synthetic small bag with uncertain context",
+    "stage": "parcel",
+    "objects": [
+      {
+        "label": "parcel_bag",
+        "confidence": 0.45,
+        "box": [
+          0.4,
+          0.5,
+          0.6,
+          0.65
+        ]
+      }
+    ]
+  },
+  {
+    "scenario": "synthetic environment with a bag only",
+    "stage": "environment",
+    "objects": [
+      {
+        "label": "parcel_bag",
+        "confidence": 0.5,
+        "box": [
+          0.4,
+          0.6,
+          0.5,
+          0.7
+        ]
+      }
+    ]
+  }
+]
