@@ -1,8 +1,8 @@
-# Flutter 配送拍照辅助（内部验证）
+# Flutter 配送拍照辅助（通用模型验证版）
 
 一个面向 iOS / Android 的 Flutter 插件：第一张拍清配送物品及其放置位置，第二张扩大环境取景。提供清晰度、取景变化和物体参考提示；任何状态均可拍照。组件不负责订单、上传或配送完成状态。
 
-当前状态：**内部验证，GitHub 私有仓库，暂不公开发布。**
+当前状态：**公开通用组件与验证示例。业务照片、训练数据和私有模型独立管理，不在本仓库中。**
 
 当前版本：**0.1.0 接入预览**。使用官方 Flutter camera + ONNX Runtime，可接入 PP-PicoDet-S / XS。源码不依赖 Ultralytics。配送纸箱、软袋、保温袋、整箱饮料、成提水和大件物品的专项效果，需要另外训练并验证业务模型。附带的本机演示准备脚本使用 COCO 通用权重，不能用于证明这些类别已被识别。
 
@@ -16,6 +16,10 @@
 - 取景建议不阻止快门与保存，没有拍后合规复核、摆放确认或倾倒检测。
 - 本机处理，模型加载失败时仍可拍照；诊断报告把“拍齐两张”与识别结论分开。
 
+## 公开范围
+
+本仓库包含 Flutter 接口、相机与取景辅助代码、原生桥接、通用验证示例及构建说明。演示模型由脚本从上游下载到本机，仓库和发行附件均不提供权重。自训模型通过宿主的本地文件路径接入，训练样本、业务照片、订单信息和签名资料应保存在工程之外。
+
 ## 平台和工具
 
 当前验证环境为 Flutter 3.44 / Dart 3.12。iOS 最低 **16.0**（本版 ONNX Runtime 包的要求），Android 最低 **API 24**。更早 iOS 版本需要单独更换/适配推理运行时；本版不声称支持。
@@ -24,12 +28,14 @@
 
 ## 接入
 
-仓库：https://github.com/zerowangyu/flutter-delivery-photo-assist （私有，需要读取权限）。业务训练权重、图片和数据集独立存放，不在仓库中。
+仓库：https://github.com/zerowangyu/flutter-delivery-photo-assist （公开通用组件）。业务训练权重、图片和数据集独立存放，不在仓库中。
 
 ```yaml
 dependencies:
   delivery_photo_assist:
-    path: /本机路径/flutter-delivery-photo-assist
+    git:
+      url: https://github.com/zerowangyu/flutter-delivery-photo-assist.git
+      ref: v0.1.0
 ```
 
 在宿主 iOS 的 Info.plist 添加 `NSCameraUsageDescription`、`NSPhotoLibraryUsageDescription`。宿主保持自己的签名配置，部署目标至少 iOS 16。Android 声明相机权限；系统相册选择沿用 image_picker。照片不需要写入系统相册。
@@ -54,7 +60,7 @@ if (result == null) return; // 用户取消
 
 ## 运行示例
 
-仓库保持私有，需要仓库读取权限。运行插件自身 example 时，克隆目录使用 `delivery_photo_assist`，避开 Flutter 插件示例在 SwiftPM 下按目录名解析的冲突。先在本机准备官方通用演示模型（只下载模型，无照片上传）：
+运行插件自身 example 时，克隆目录使用 `delivery_photo_assist`，避开 Flutter 插件示例在 SwiftPM 下按目录名解析的冲突。先在本机准备官方通用演示模型（只下载模型，无照片上传）：
 
 ```bash
 git clone https://github.com/zerowangyu/flutter-delivery-photo-assist.git delivery_photo_assist

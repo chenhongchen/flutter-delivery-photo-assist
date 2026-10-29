@@ -61,3 +61,18 @@ example/assets/models/*.json
 **/*.pth
 
 .tools/
+
+# 私有训练产物与凭据
+**/weights/
+**/checkpoints/
+**/runs/
+**/wandb/
+**/*.bin
+**/*.safetensors
+**/*.ckpt
+**/*.npz
+**/*.npy
+**/*.mlmodel
+**/*.mlmodelc/
+**/.env
+**/.env.*
