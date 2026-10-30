@@ -81,6 +81,9 @@ class _CameraScreenState extends State<CameraScreen>
   int _lastZoomRefreshMs = -1000;
   int _lastZoomChangeMs = -1000;
   late final PerformanceGovernor _governor;
+  int get _sceneFreshMs => _governor.budget.fps == 1 ? 3000 : 1200;
+  int get _framingFreshMs =>
+      _governor.budget.framingIntervalMs >= 1200 ? 3000 : 2200;
   final _ui = ValueNotifier<int>(0);
   late Widget _nativeView;
   String _uiSignature = '', _policyKey = '';
@@ -114,7 +117,9 @@ class _CameraScreenState extends State<CameraScreen>
     _zoomSubscription = _controller.zoomEvents.listen(_onZoomChanged);
     _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (!mounted || !_active) return;
-      _hint = _stabilizer.at(_clock.elapsedMilliseconds).forStage(_stage);
+      _hint = _stabilizer
+          .at(_clock.elapsedMilliseconds, staleAfterMs: _sceneFreshMs)
+          .forStage(_stage);
       _publishUi();
       final now = _clock.elapsedMilliseconds;
       if (now - _lastZoomRefreshMs >= (_zoomAvailable ? 3000 : 500)) {
@@ -300,7 +305,11 @@ class _CameraScreenState extends State<CameraScreen>
       textClues: SceneTextClues.parse(data['sceneText']),
     );
     final hint = _stabilizer
-        .add(_rules.evaluate(facts, _stage, widget.settings), now)
+        .add(
+          _rules.evaluate(facts, _stage, widget.settings),
+          now,
+          staleAfterMs: _sceneFreshMs,
+        )
         .forStage(_stage);
     _facts = facts;
     _hint = hint;
@@ -353,7 +362,7 @@ class _CameraScreenState extends State<CameraScreen>
     }
     final freshFacts =
         _facts != null &&
-            _clock.elapsedMilliseconds - _facts!.receivedAtMs <= 1200
+            _clock.elapsedMilliseconds - _facts!.receivedAtMs <= _sceneFreshMs
         ? _facts
         : null;
     if ((!_governor.budget.detectionEnabled ||
@@ -367,6 +376,8 @@ class _CameraScreenState extends State<CameraScreen>
         nowMs: _clock.elapsedMilliseconds,
         stable: false,
         framing: _framingTracker,
+        sceneFreshMs: _sceneFreshMs,
+        framingFreshMs: _framingFreshMs,
       );
     }
     if (!_governor.budget.detectionEnabled) {
@@ -413,6 +424,8 @@ class _CameraScreenState extends State<CameraScreen>
           facts != null &&
           _hint.code == _rules.evaluate(facts, _stage, widget.settings).code,
       framing: _framingTracker,
+      sceneFreshMs: _sceneFreshMs,
+      framingFreshMs: _framingFreshMs,
     );
   }
 
@@ -456,7 +469,7 @@ class _CameraScreenState extends State<CameraScreen>
       unawaited(_syncAnalysisPolicy());
       if (!mounted || generation != _analysisGeneration || !_active) return;
       _update(() {
-        _framingTracker.add(check, started);
+        _framingTracker.add(check, started, maxGapMs: _framingFreshMs);
         _framingError = null;
       });
     } catch (error) {
@@ -662,7 +675,7 @@ class _CameraScreenState extends State<CameraScreen>
   String get _qualityLabel {
     final facts = _facts;
     if (facts == null ||
-        _clock.elapsedMilliseconds - facts.receivedAtMs > 1200) {
+        _clock.elapsedMilliseconds - facts.receivedAtMs > _sceneFreshMs) {
       return '待确认';
     }
     return facts.clarity?.label ?? '待确认';

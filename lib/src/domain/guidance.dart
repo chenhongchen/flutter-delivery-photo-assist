@@ -396,9 +396,9 @@ class HintStabilizer {
   int? _lastChanged;
   int? _lastFrame;
 
-  GuideHint add(GuideHint next, int nowMs) {
+  GuideHint add(GuideHint next, int nowMs, {int staleAfterMs = 1500}) {
     // Clear confidence after interruptions; old votes must not join a new burst.
-    if (_lastFrame != null && nowMs - _lastFrame! > 1500) reset();
+    if (_lastFrame != null && nowMs - _lastFrame! > staleAfterMs) reset();
     _lastFrame = nowMs;
     if (_candidate == next.code) {
       _count++;
@@ -414,8 +414,8 @@ class HintStabilizer {
     return current;
   }
 
-  GuideHint at(int nowMs) {
-    if (_lastFrame != null && nowMs - _lastFrame! > 1500) {
+  GuideHint at(int nowMs, {int staleAfterMs = 1500}) {
+    if (_lastFrame != null && nowMs - _lastFrame! > staleAfterMs) {
       reset();
       current = GuideHint.stale;
     }

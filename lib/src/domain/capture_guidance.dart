@@ -20,8 +20,10 @@ class CaptureGuidance {
     required int nowMs,
     required bool stable,
     required FramingTracker framing,
+    int sceneFreshMs = 1200,
+    int framingFreshMs = 1500,
   }) {
-    if (facts == null || nowMs - facts.receivedAtMs > 1200) {
+    if (facts == null || nowMs - facts.receivedAtMs > sceneFreshMs) {
       return const CaptureAdvice(
         CaptureState.observing,
         '正在检查画面',
@@ -91,7 +93,7 @@ class CaptureGuidance {
         'first_ready',
       );
     }
-    if (!framing.fresh(nowMs)) {
+    if (!framing.fresh(nowMs, maxAgeMs: framingFreshMs)) {
       return const CaptureAdvice(
         CaptureState.observing,
         '正在参考第一张画面',
@@ -124,7 +126,7 @@ class CaptureGuidance {
         'unmatched',
       );
     }
-    if (!framing.ready(nowMs) || !stable) {
+    if (!framing.ready(nowMs, maxAgeMs: framingFreshMs) || !stable) {
       return const CaptureAdvice(
         CaptureState.observing,
         '正在确认远景',

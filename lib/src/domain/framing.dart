@@ -84,10 +84,10 @@ class FramingTracker {
     referenceId = reference;
   }
 
-  void add(FramingCheck next, int startedAtMs) {
+  void add(FramingCheck next, int startedAtMs, {int maxGapMs = 1500}) {
     if (next.referenceId != referenceId) return;
     if (_startedAtMs != null && startedAtMs <= _startedAtMs!) return;
-    if (_startedAtMs != null && startedAtMs - _startedAtMs! > 1500) {
+    if (_startedAtMs != null && startedAtMs - _startedAtMs! > maxGapMs) {
       _farCount = 0;
     }
     _startedAtMs = startedAtMs;
@@ -95,10 +95,10 @@ class FramingTracker {
     _farCount = next.state == FramingState.far ? _farCount + 1 : 0;
   }
 
-  bool fresh(int nowMs) =>
-      _startedAtMs != null && nowMs - _startedAtMs! <= 1500;
-  bool ready(int nowMs) =>
-      fresh(nowMs) &&
+  bool fresh(int nowMs, {int maxAgeMs = 1500}) =>
+      _startedAtMs != null && nowMs - _startedAtMs! <= maxAgeMs;
+  bool ready(int nowMs, {int maxAgeMs = 1500}) =>
+      fresh(nowMs, maxAgeMs: maxAgeMs) &&
       current.referenceId == referenceId &&
       current.state == FramingState.far &&
       _farCount >= 2;

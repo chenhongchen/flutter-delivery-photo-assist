@@ -78,6 +78,25 @@ void main() {
       );
     },
   );
+  test('slow comparisons keep near advice until the next expected result', () {
+    final tracker = FramingTracker()..reset('first');
+    tracker.add(FramingCheck.fromJson(matched(1)), 100, maxGapMs: 3000);
+    final advice = const CaptureGuidance().evaluate(
+      stage: ShotStage.environment,
+      facts: facts(),
+      settings: const GuideSettings(),
+      nowMs: 2600,
+      stable: true,
+      framing: tracker,
+      sceneFreshMs: 3000,
+      framingFreshMs: 3000,
+    );
+    expect(advice.reason, 'not_farther');
+    tracker.add(FramingCheck.fromJson(matched(.68)), 2700, maxGapMs: 3000);
+    tracker.add(FramingCheck.fromJson(matched(.69)), 4900, maxGapMs: 3000);
+    expect(tracker.ready(5000, maxAgeMs: 3000), isTrue);
+    expect(tracker.fresh(8001, maxAgeMs: 3000), isFalse);
+  });
   testWidgets(
     'red, yellow and green shutters all respond; only an in-flight camera capture suppresses repeat taps',
     (tester) async {

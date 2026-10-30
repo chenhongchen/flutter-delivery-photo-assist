@@ -264,6 +264,16 @@ void main() {
     stabilizer.add(ready, 200);
     expect(stabilizer.add(ready, 3000).isReady, isFalse);
   });
+  test('one sample per second does not expire between normal callbacks', () {
+    final stabilizer = HintStabilizer();
+    const ready = GuideHint(HintCode.ready, 'ready', '');
+    stabilizer.add(ready, 0, staleAfterMs: 3000);
+    stabilizer.add(ready, 900, staleAfterMs: 3000);
+    stabilizer.add(ready, 1800, staleAfterMs: 3000);
+    expect(stabilizer.at(3800, staleAfterMs: 3000).isReady, isTrue);
+    expect(stabilizer.add(ready, 4000, staleAfterMs: 3000).isReady, isTrue);
+    expect(stabilizer.at(7100, staleAfterMs: 3000).code, HintCode.stale);
+  });
   test('timing window stays bounded and rejects invalid samples', () {
     final timings = TimingSummary();
     for (var i = 1; i <= 400; i++) {
