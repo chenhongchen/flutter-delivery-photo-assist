@@ -98,9 +98,23 @@ endif()
 
 include(FetchContent)
 
+# Keep the source archive outside Flutter's build directories so Android and
+# iOS can share it and `flutter clean` does not delete it.
+if(DEFINED ENV{DARTCV_OPENCV_CACHE_DIR} AND NOT "$ENV{DARTCV_OPENCV_CACHE_DIR}" STREQUAL "")
+  set(DARTCV_OPENCV_DOWNLOAD_DIR "$ENV{DARTCV_OPENCV_CACHE_DIR}")
+elseif(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
+  set(DARTCV_OPENCV_DOWNLOAD_DIR "$ENV{HOME}/.cache/dartcv4/opencv")
+else()
+  set(DARTCV_OPENCV_DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/_deps")
+endif()
+file(MAKE_DIRECTORY "${DARTCV_OPENCV_DOWNLOAD_DIR}")
+
 # Build from source
 if(DARTCV_BUILD_OPENCV_FROM_SOURCE)
   include(cmake/opencv_options.cmake)
+  if(NOT OPENCV_VERSION STREQUAL "4.13.0")
+    message(FATAL_ERROR "Update the shared OpenCV archive hash for ${OPENCV_VERSION}")
+  endif()
 
   if(DARTCV_WITH_ARUCO
     OR DARTCV_WITH_IMG_HASH
@@ -120,6 +134,8 @@ if(DARTCV_BUILD_OPENCV_FROM_SOURCE)
   FetchContent_Declare(
     opencv
     URL https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VERSION}.tar.gz
+    URL_HASH SHA256=1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d
+    DOWNLOAD_DIR "${DARTCV_OPENCV_DOWNLOAD_DIR}"
   )
   FetchContent_MakeAvailable(opencv)
   set(DARTCV_DEP_INCLUDE_DIRS

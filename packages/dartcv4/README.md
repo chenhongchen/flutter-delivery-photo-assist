@@ -126,6 +126,10 @@ see [example](https://github.com/rainyl/opencv_dart/tree/main/packages/dartcv/ex
 
 ~~More examples are on the way...~~ see [awesome-opencv_dart](https://github.com/rainyl/awesome-opencv_dart) and share yours
 
+#### OpenCV download cache
+
+The OpenCV 4.13.0 source archive is cached at `$HOME/.cache/dartcv4/opencv/4.13.0.tar.gz` by default. Set `DARTCV_OPENCV_CACHE_DIR` to use another persistent directory. Android and iOS share the archive, while their native binaries are built separately. `flutter clean` does not remove this cache. The archive is verified with SHA-256 and is not committed to Git.
+
 #### Configure hooks options
 
 dartcv4 now supports hooks options, you can configure it in `pubspec.yaml`
