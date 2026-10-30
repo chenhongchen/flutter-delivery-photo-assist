@@ -36,6 +36,7 @@ class PerformanceGovernor {
   AnalysisTier _tier = AnalysisTier.standard;
   bool preferSmooth = false;
   bool _framingTooSlow = false;
+  bool _singleSample = false;
   int _slowModel = 0, _verySlowModel = 0, _slowFraming = 0;
   final List<bool> _jank = [];
   final List<Map<String, Object>> changes = [];
@@ -54,7 +55,7 @@ class PerformanceGovernor {
       ),
       AnalysisTier.reduced => AnalysisBudget(
         tier,
-        math.min(requestedFps, 2).clamp(1, 2),
+        _singleSample ? 1 : math.min(requestedFps, 2).clamp(1, 2),
         _framingTooSlow ? 0 : 1200,
         false,
       ),
@@ -92,12 +93,14 @@ class PerformanceGovernor {
     if (!ms.isFinite || ms <= 0) return;
     _slowModel = ms > 180 ? _slowModel + 1 : 0;
     _verySlowModel = ms > 450 ? _verySlowModel + 1 : 0;
-    if (_verySlowModel >= 4) {
-      _degrade(
-        debugMode ? AnalysisTier.reduced : AnalysisTier.minimal,
-        debugMode ? 'debug_model_slow' : 'model_over_budget',
-        nowMs,
-      );
+    if (_verySlowModel >= 4 && !_singleSample) {
+      _singleSample = true;
+      if (_tier == AnalysisTier.standard) {
+        _degrade(AnalysisTier.reduced, 'model_over_budget', nowMs);
+      } else if (_tier == AnalysisTier.reduced) {
+        reason = 'model_over_budget';
+        changes.add({'atMs': nowMs, 'reason': reason, ...budget.toJson()});
+      }
     } else if (_slowModel >= 6) {
       _degrade(AnalysisTier.reduced, 'model_slow', nowMs);
     }

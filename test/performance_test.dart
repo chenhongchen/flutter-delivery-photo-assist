@@ -16,9 +16,10 @@ void main() {
     for (var i = 0; i < 4; i++) {
       governor.observeModel(500, 5000 + i * 600);
     }
-    expect(governor.budget.detectionEnabled, isFalse);
-    expect(governor.budget.framingEnabled, isFalse);
+    expect(governor.budget.detectionEnabled, isTrue);
+    expect(governor.budget.framingEnabled, isTrue);
     expect(governor.budget.fps, 1);
+    expect(governor.reason, 'model_over_budget');
   });
   test(
     'debug keeps recognition and framing active at one sample per second',
