@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
@@ -472,6 +472,7 @@ class _CameraScreenState extends State<CameraScreen>
       });
     } catch (error) {
       if (mounted && generation == _analysisGeneration && _active) {
+        debugPrint('配送拍照远景对照失败：$error');
         _update(() {
           _framingTracker.reset(_framingTracker.referenceId);
           _framingError = error.toString();
@@ -499,6 +500,7 @@ class _CameraScreenState extends State<CameraScreen>
       });
     } catch (error) {
       if (mounted && _framingTracker.referenceId == id) {
+        debugPrint('配送拍照远景参考加载失败：$error');
         _update(() => _framingError = error.toString());
       }
     }
@@ -1010,6 +1012,11 @@ class _CameraScreenState extends State<CameraScreen>
                     color: Colors.black54,
                   ),
                 ),
+                if (_framingError != null)
+                  Text(
+                    '远景错误：$_framingError',
+                    style: const TextStyle(fontSize: 11, color: Colors.red),
+                  ),
                 if (_error != null ||
                     (!_sawFrame && _clock.elapsedMilliseconds > 10000))
                   TextButton(
