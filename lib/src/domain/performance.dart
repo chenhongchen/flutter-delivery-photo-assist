@@ -30,12 +30,11 @@ class AnalysisBudget {
 
 /// Downgrades are sticky for one camera session so cooling/recovery cannot make the UI and workload oscillate.
 class PerformanceGovernor {
-  PerformanceGovernor({this.requestedFps = 3, this.debugMode = false});
+  PerformanceGovernor({this.requestedFps = 3});
   final int requestedFps;
-  final bool debugMode;
   AnalysisTier _tier = AnalysisTier.standard;
   bool preferSmooth = false;
-  bool _framingTooSlow = false;
+  bool _framingThrottled = false;
   bool _singleSample = false;
   int _slowModel = 0, _verySlowModel = 0, _slowFraming = 0;
   final List<bool> _jank = [];
@@ -50,13 +49,13 @@ class PerformanceGovernor {
       AnalysisTier.standard => AnalysisBudget(
         tier,
         requestedFps.clamp(1, 5),
-        _framingTooSlow ? 0 : 800,
+        _framingThrottled ? 2500 : 800,
         true,
       ),
       AnalysisTier.reduced => AnalysisBudget(
         tier,
         _singleSample ? 1 : math.min(requestedFps, 2).clamp(1, 2),
-        _framingTooSlow ? 0 : 1200,
+        _framingThrottled ? 2500 : 1200,
         false,
       ),
       AnalysisTier.minimal => AnalysisBudget(tier, 1, 0, false),
@@ -109,8 +108,8 @@ class PerformanceGovernor {
   void observeFraming(double ms, int nowMs) {
     if (!ms.isFinite || ms <= 0) return;
     _slowFraming = ms > 450 ? _slowFraming + 1 : 0;
-    if (_slowFraming >= 3 && !_framingTooSlow && !debugMode) {
-      _framingTooSlow = true;
+    if (_slowFraming >= 3 && !_framingThrottled) {
+      _framingThrottled = true;
       reason = 'framing_over_budget';
       changes.add({'atMs': nowMs, 'reason': reason, ...budget.toJson()});
     }

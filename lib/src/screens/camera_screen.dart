@@ -82,8 +82,7 @@ class _CameraScreenState extends State<CameraScreen>
   int _lastZoomChangeMs = -1000;
   late final PerformanceGovernor _governor;
   int get _sceneFreshMs => _governor.budget.fps == 1 ? 3000 : 1200;
-  int get _framingFreshMs =>
-      _governor.budget.framingIntervalMs >= 1200 ? 3000 : 2200;
+  int get _framingFreshMs => _governor.budget.framingIntervalMs * 2 + 600;
   final _ui = ValueNotifier<int>(0);
   late Widget _nativeView;
   String _uiSignature = '', _policyKey = '';
@@ -102,7 +101,6 @@ class _CameraScreenState extends State<CameraScreen>
     _boxes = widget.settings.showBoxes;
     _governor = PerformanceGovernor(
       requestedFps: kDebugMode ? 1 : widget.settings.inferenceFps,
-      debugMode: kDebugMode,
     );
     if (_stage == ShotStage.environment) unawaited(_restoreReference());
     _nativeView = _createNativeView();

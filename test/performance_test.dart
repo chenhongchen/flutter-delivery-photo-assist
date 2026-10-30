@@ -21,25 +21,23 @@ void main() {
     expect(governor.budget.fps, 1);
     expect(governor.reason, 'model_over_budget');
   });
-  test(
-    'debug keeps recognition and framing active at one sample per second',
-    () {
-      final governor = PerformanceGovernor(requestedFps: 1, debugMode: true);
-      for (var i = 0; i < 4; i++) {
-        governor.observeModel(700, i * 1000);
-      }
-      expect(governor.budget.tier, AnalysisTier.reduced);
-      expect(governor.budget.fps, 1);
-      expect(governor.budget.detectionEnabled, isTrue);
-      for (var i = 0; i < 3; i++) {
-        governor.observeFraming(900, 5000 + i * 1500);
-      }
-      expect(governor.budget.framingEnabled, isTrue);
-      governor.memoryPressure(10000);
-      expect(governor.budget.detectionEnabled, isFalse);
-      expect(governor.budget.framingEnabled, isFalse);
-    },
-  );
+  test('slow model keeps recognition active at one sample per second', () {
+    final governor = PerformanceGovernor(requestedFps: 1);
+    for (var i = 0; i < 4; i++) {
+      governor.observeModel(700, i * 1000);
+    }
+    expect(governor.budget.tier, AnalysisTier.reduced);
+    expect(governor.budget.fps, 1);
+    expect(governor.budget.detectionEnabled, isTrue);
+    for (var i = 0; i < 3; i++) {
+      governor.observeFraming(900, 5000 + i * 1500);
+    }
+    expect(governor.budget.framingEnabled, isTrue);
+    expect(governor.budget.framingIntervalMs, 2500);
+    governor.memoryPressure(10000);
+    expect(governor.budget.detectionEnabled, isFalse);
+    expect(governor.budget.framingEnabled, isFalse);
+  });
 
   test('device pressure lowers work without oscillating on recovery', () {
     final governor = PerformanceGovernor();
@@ -53,13 +51,14 @@ void main() {
     expect(governor.budget.tier, AnalysisTier.minimal);
   });
   test(
-    'expensive framing pauses itself and memory pressure stops heavy work',
+    'expensive framing slows comparisons and memory pressure stops heavy work',
     () {
       final governor = PerformanceGovernor();
       for (var i = 0; i < 3; i++) {
         governor.observeFraming(900, i * 1500);
       }
-      expect(governor.budget.framingEnabled, isFalse);
+      expect(governor.budget.framingEnabled, isTrue);
+      expect(governor.budget.framingIntervalMs, 2500);
       expect(governor.budget.detectionEnabled, isTrue);
       governor.memoryPressure(5000);
       expect(governor.budget.detectionEnabled, isFalse);
