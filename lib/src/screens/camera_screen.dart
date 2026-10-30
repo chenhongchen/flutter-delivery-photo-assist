@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
@@ -96,7 +97,10 @@ class _CameraScreenState extends State<CameraScreen>
     WidgetsBinding.instance.addObserver(this);
     _stabilizer = HintStabilizer(requiredFrames: widget.settings.stableFrames);
     _boxes = widget.settings.showBoxes;
-    _governor = PerformanceGovernor(requestedFps: widget.settings.inferenceFps);
+    _governor = PerformanceGovernor(
+      requestedFps: kDebugMode ? 1 : widget.settings.inferenceFps,
+      debugMode: kDebugMode,
+    );
     if (_stage == ShotStage.environment) unawaited(_restoreReference());
     _nativeView = _createNativeView();
     SchedulerBinding.instance.addTimingsCallback(_onUiTimings);

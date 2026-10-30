@@ -30,8 +30,9 @@ class AnalysisBudget {
 
 /// Downgrades are sticky for one camera session so cooling/recovery cannot make the UI and workload oscillate.
 class PerformanceGovernor {
-  PerformanceGovernor({this.requestedFps = 3});
+  PerformanceGovernor({this.requestedFps = 3, this.debugMode = false});
   final int requestedFps;
+  final bool debugMode;
   AnalysisTier _tier = AnalysisTier.standard;
   bool preferSmooth = false;
   bool _framingTooSlow = false;
@@ -92,7 +93,11 @@ class PerformanceGovernor {
     _slowModel = ms > 180 ? _slowModel + 1 : 0;
     _verySlowModel = ms > 450 ? _verySlowModel + 1 : 0;
     if (_verySlowModel >= 4) {
-      _degrade(AnalysisTier.minimal, 'model_over_budget', nowMs);
+      _degrade(
+        debugMode ? AnalysisTier.reduced : AnalysisTier.minimal,
+        debugMode ? 'debug_model_slow' : 'model_over_budget',
+        nowMs,
+      );
     } else if (_slowModel >= 6) {
       _degrade(AnalysisTier.reduced, 'model_slow', nowMs);
     }
@@ -101,7 +106,7 @@ class PerformanceGovernor {
   void observeFraming(double ms, int nowMs) {
     if (!ms.isFinite || ms <= 0) return;
     _slowFraming = ms > 450 ? _slowFraming + 1 : 0;
-    if (_slowFraming >= 3 && !_framingTooSlow) {
+    if (_slowFraming >= 3 && !_framingTooSlow && !debugMode) {
       _framingTooSlow = true;
       reason = 'framing_over_budget';
       changes.add({'atMs': nowMs, 'reason': reason, ...budget.toJson()});

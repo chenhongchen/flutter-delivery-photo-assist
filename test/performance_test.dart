@@ -20,6 +20,26 @@ void main() {
     expect(governor.budget.framingEnabled, isFalse);
     expect(governor.budget.fps, 1);
   });
+  test(
+    'debug keeps recognition and framing active at one sample per second',
+    () {
+      final governor = PerformanceGovernor(requestedFps: 1, debugMode: true);
+      for (var i = 0; i < 4; i++) {
+        governor.observeModel(700, i * 1000);
+      }
+      expect(governor.budget.tier, AnalysisTier.reduced);
+      expect(governor.budget.fps, 1);
+      expect(governor.budget.detectionEnabled, isTrue);
+      for (var i = 0; i < 3; i++) {
+        governor.observeFraming(900, 5000 + i * 1500);
+      }
+      expect(governor.budget.framingEnabled, isTrue);
+      governor.memoryPressure(10000);
+      expect(governor.budget.detectionEnabled, isFalse);
+      expect(governor.budget.framingEnabled, isFalse);
+    },
+  );
+
   test('device pressure lowers work without oscillating on recovery', () {
     final governor = PerformanceGovernor();
     governor.observeDevice({'lowRam': true}, 0);
