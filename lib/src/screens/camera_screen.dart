@@ -511,11 +511,7 @@ class _CameraScreenState extends State<CameraScreen>
     if (first == null) return;
     final id = first.path.split(Platform.pathSeparator).last;
     _framingTracker.reset(id);
-    final path = first.framingReferencePath;
-    if (path == null) {
-      _framingError = '第一张预览参考暂不可用';
-      return;
-    }
+    final path = first.framingReferencePath ?? first.path;
     try {
       final bytes = await File(path).readAsBytes();
       if (!mounted || _leaving) return;
@@ -565,6 +561,10 @@ class _CameraScreenState extends State<CameraScreen>
           .timeout(const Duration(seconds: 8));
       final bytes = capture?['jpeg'] as Uint8List?;
       if (bytes == null) throw StateError('相机未返回照片');
+      final previewReference = capture?['analysisReference'] as Uint8List?;
+      final framingReference = stageAtTap == ShotStage.parcel
+          ? previewReference ?? bytes
+          : null;
       final rawQuality = FrameClarity.parse(capture?['quality']);
       final quality = stageAtTap == ShotStage.environment
           ? rawQuality?.environmentOnly
@@ -582,7 +582,7 @@ class _CameraScreenState extends State<CameraScreen>
         timings: _timingReport(),
         quality: quality?.toJson(),
         captureSource: capture?['source'] as String?,
-        framingReference: capture?['analysisReference'] as Uint8List?,
+        framingReference: framingReference,
         guidance: {
           'scope':
               'live_advice_only; never blocks saving; no post-photo framing verification',
@@ -591,17 +591,15 @@ class _CameraScreenState extends State<CameraScreen>
           'performance': _governor.toJson(),
           'cameraZoom': zoomAtTap,
           'overlaysShown': boxesAtTap,
-          'referenceScope': capture?['referenceScope'],
+          'referenceScope':
+              previewReference == null && stageAtTap == ShotStage.parcel
+              ? 'captured_photo_fallback'
+              : capture?['referenceScope'],
           if (stageAtTap == ShotStage.environment)
             'framingAdvice': framingAtTap.toJson(),
         },
       );
-      _afterSaved(
-        shot,
-        bytes,
-        captureMs,
-        framingReference: capture?['analysisReference'] as Uint8List?,
-      );
+      _afterSaved(shot, bytes, captureMs, framingReference: framingReference);
     } catch (error) {
       if (mounted) _message('拍摄失败：$error');
     } finally {
@@ -825,13 +823,7 @@ class _CameraScreenState extends State<CameraScreen>
       _framingError = null;
       final id = shot.path.split(Platform.pathSeparator).last;
       _framingTracker.reset(id);
-      final reference =
-          framingReference ?? (shot.captureSource == 'gallery' ? bytes : null);
-      if (reference != null) {
-        unawaited(_prepareReference(reference, id));
-      } else {
-        _framingError = '第一张预览参考暂不可用';
-      }
+      unawaited(_prepareReference(framingReference ?? bytes, id));
       _switchStage(ShotStage.environment);
       _message('第一张已保存，可继续拍周围环境');
     } else {
