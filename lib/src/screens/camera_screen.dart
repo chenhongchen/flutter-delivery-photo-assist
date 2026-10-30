@@ -92,10 +92,12 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   void initState() {
     super.initState();
+    _stage = widget.session.retakeStage ?? ShotStage.parcel;
     WidgetsBinding.instance.addObserver(this);
     _stabilizer = HintStabilizer(requiredFrames: widget.settings.stableFrames);
     _boxes = widget.settings.showBoxes;
     _governor = PerformanceGovernor(requestedFps: widget.settings.inferenceFps);
+    if (_stage == ShotStage.environment) unawaited(_restoreReference());
     _nativeView = _createNativeView();
     SchedulerBinding.instance.addTimingsCallback(_onUiTimings);
     unawaited(
@@ -304,7 +306,7 @@ class _CameraScreenState extends State<CameraScreen>
   }
 
   void _switchStage(ShotStage stage) {
-    if (_capturing) return;
+    if (_capturing || widget.session.retakeStage != null) return;
     if (stage == ShotStage.environment &&
         widget.session.shots[ShotStage.parcel] == null) {
       _message('请先拍第一张，再拍周围环境');
@@ -487,6 +489,27 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
+  Future<void> _restoreReference() async {
+    final first = widget.session.shots[ShotStage.parcel];
+    if (first == null) return;
+    final id = first.path.split(Platform.pathSeparator).last;
+    _framingTracker.reset(id);
+    final path = first.framingReferencePath;
+    if (path == null) {
+      _framingError = '第一张预览参考暂不可用';
+      return;
+    }
+    try {
+      final bytes = await File(path).readAsBytes();
+      if (!mounted || _leaving) return;
+      await _prepareReference(bytes, id);
+    } catch (_) {
+      if (mounted && !_leaving) {
+        _update(() => _framingError = '第一张预览参考暂不可用');
+      }
+    }
+  }
+
   Future<void> _capture() async {
     if (_capturing || _leaving || !_active) return;
     if (!_controller.isInitialized) {
@@ -542,6 +565,7 @@ class _CameraScreenState extends State<CameraScreen>
         timings: _timingReport(),
         quality: quality?.toJson(),
         captureSource: capture?['source'] as String?,
+        framingReference: capture?['analysisReference'] as Uint8List?,
         guidance: {
           'scope':
               'live_advice_only; never blocks saving; no post-photo framing verification',
@@ -773,6 +797,12 @@ class _CameraScreenState extends State<CameraScreen>
       _captureMs = elapsedMs;
       _capturing = false;
     });
+    if (widget.session.retakeStage != null) {
+      _leaving = true;
+      _active = false;
+      Navigator.of(context).pop(true);
+      return;
+    }
     if (shot.stage == ShotStage.parcel) {
       _referenceReady = false;
       _framingError = null;
@@ -824,6 +854,7 @@ class _CameraScreenState extends State<CameraScreen>
         timings: _timingReport(),
         quality: FrameClarity.parse(result['quality'])?.toJson(),
         captureSource: 'gallery',
+        framingReference: stage == ShotStage.parcel ? jpeg : null,
         guidance: {
           'scope':
               'gallery import; no live scene evidence or post-photo framing verification',
@@ -1016,6 +1047,7 @@ class _CameraScreenState extends State<CameraScreen>
               child: RepaintBoundary(
                 child: CameraChrome(
                   stage: _stage,
+                  retakeStage: widget.session.retakeStage,
                   savedStages: widget.session.shots.keys.toSet(),
                   advice: _decision(),
                   capturing: _capturing,

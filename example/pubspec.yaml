@@ -1,6 +1,6 @@
 name: delivery_photo_assist_example
 description: 配送拍照辅助插件接入示例。
-version: 0.1.0+1
+version: 0.1.1+2
 publish_to: none
 environment:
   sdk: ^3.12.2

@@ -1,6 +1,6 @@
 name: delivery_photo_assist
 description: 司机配送双照片拍摄辅助，提供取景、清晰度、相册与可替换的本地 PP-PicoDet 推理。
-version: 0.1.0
+version: 0.1.1
 publish_to: none
 repository: https://github.com/zerowangyu/flutter-delivery-photo-assist
 environment:
@@ -19,6 +19,7 @@ dependencies:
   dartcv4:
     path: packages/dartcv4
 dev_dependencies:
+  camera_platform_interface: ^2.15.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

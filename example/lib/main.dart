@@ -51,7 +51,9 @@ class _ExampleHomeState extends State<ExampleHome> {
     );
   }
 
-  Future<void> _open() async {
+  Future<void> _open({ShotStage? retakeStage}) async {
+    if (_opening) return;
+    final previous = _result;
     setState(() {
       _opening = true;
       _error = null;
@@ -59,7 +61,14 @@ class _ExampleHomeState extends State<ExampleHome> {
     try {
       final model = await _model();
       if (!mounted) return;
-      final result = await DeliveryPhotoAssist.capture(context, model: model);
+      final result = retakeStage != null && previous != null
+          ? await DeliveryPhotoAssist.retake(
+              context,
+              model: model,
+              previous: previous,
+              stage: retakeStage,
+            )
+          : await DeliveryPhotoAssist.capture(context, model: model);
       if (mounted && result != null) setState(() => _result = result);
     } catch (error) {
       if (mounted) setState(() => _error = '暂时无法打开：$error');
@@ -116,7 +125,13 @@ class _ExampleHomeState extends State<ExampleHome> {
               minimumSize: const Size.fromHeight(56),
             ),
             icon: const Icon(Icons.camera_alt_outlined),
-            label: Text(_opening ? '准备中' : '开始拍照'),
+            label: Text(
+              _opening
+                  ? '准备中'
+                  : _result == null
+                  ? '开始拍照'
+                  : '重新拍摄两张',
+            ),
           ),
           if (_error != null)
             Padding(
@@ -125,29 +140,77 @@ class _ExampleHomeState extends State<ExampleHome> {
             ),
           if (_result != null) ...[
             const SizedBox(height: 28),
-            const Text('最近拍摄', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('本次照片', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             Row(
               children: [
-                for (final file in [
-                  _result!.parcelPhoto,
-                  _result!.environmentPhoto,
-                ])
+                for (final stage in ShotStage.values)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(4),
-                      child: Image.file(file, height: 180, fit: BoxFit.cover),
+                      child: _PhotoCard(
+                        stage: stage,
+                        file: stage == ShotStage.parcel
+                            ? _result!.parcelPhoto
+                            : _result!.environmentPhoto,
+                        onEdit: _opening
+                            ? null
+                            : () => _open(retakeStage: stage),
+                      ),
                     ),
                   ),
               ],
             ),
             const Text(
-              '已返回两张本地照片，宿主可复用原有上传流程。',
+              '点击图片或修改按钮，只重拍对应的一张；拍完直接返回，另一张保留。',
               style: TextStyle(fontSize: 12, height: 1.7),
             ),
           ],
         ],
       ),
+    ),
+  );
+}
+
+class _PhotoCard extends StatelessWidget {
+  const _PhotoCard({required this.stage, required this.file, this.onEdit});
+  final ShotStage stage;
+  final File file;
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: EdgeInsets.zero,
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onEdit,
+          child: Semantics(
+            label: '${stage.label}，${stage.title}，点击重新拍摄',
+            child: Image.file(
+              file,
+              key: ValueKey('photo-${stage.name}'),
+              height: 180,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          child: Text(
+            '${stage.label} · ${stage.title}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+        TextButton.icon(
+          key: ValueKey('edit-${stage.name}'),
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('修改'),
+        ),
+      ],
     ),
   );
 }

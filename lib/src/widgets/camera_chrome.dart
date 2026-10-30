@@ -32,8 +32,10 @@ class CameraChrome extends StatelessWidget {
     this.firstShot,
     this.notice,
     this.performanceLabel = '自动适配',
+    this.retakeStage,
   });
   final ShotStage stage;
+  final ShotStage? retakeStage;
   final Set<ShotStage> savedStages;
   final CaptureAdvice advice;
   final bool capturing, boxes, torch, zoomAvailable;
@@ -97,10 +99,10 @@ class CameraChrome extends StatelessWidget {
                         size: 24,
                       ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '配送拍照',
-                        style: TextStyle(
+                        retakeStage == null ? '配送拍照' : '重拍${stage.label}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -144,7 +146,10 @@ class CameraChrome extends StatelessWidget {
                     for (final shot in ShotStage.values)
                       Expanded(
                         child: TextButton(
-                          onPressed: capturing ? null : () => onStage(shot),
+                          key: ValueKey('camera-stage-${shot.name}'),
+                          onPressed: capturing || retakeStage != null
+                              ? null
+                              : () => onStage(shot),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             backgroundColor: stage == shot
@@ -153,6 +158,9 @@ class CameraChrome extends StatelessWidget {
                             foregroundColor: stage == shot
                                 ? const Color(0xFF26292D)
                                 : Colors.white70,
+                            disabledForegroundColor: stage == shot
+                                ? const Color(0xFF26292D)
+                                : Colors.white38,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9),
                             ),
@@ -162,7 +170,8 @@ class CameraChrome extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (savedStages.contains(shot))
+                                if (savedStages.contains(shot) &&
+                                    shot != retakeStage)
                                   const Padding(
                                     padding: EdgeInsets.only(right: 5),
                                     child: Icon(Icons.check_rounded, size: 15),
@@ -331,16 +340,29 @@ class CameraChrome extends StatelessWidget {
                       CaptureShutter(
                         state: advice.state,
                         busy: capturing,
-                        stageLabel: stage.label,
+                        stageLabel: retakeStage == null
+                            ? stage.label
+                            : '重拍${stage.label}',
                         onCapture: onCapture,
                       ),
                       _SideAction(
                         key: const Key('camera-review'),
-                        label: '已拍 ${savedStages.length}/2',
-                        onTap: savedStages.isEmpty || capturing
+                        label: retakeStage == null
+                            ? '已拍 ${savedStages.length}/2'
+                            : '拍完返回',
+                        onTap:
+                            retakeStage != null ||
+                                savedStages.isEmpty ||
+                                capturing
                             ? null
                             : onReview,
-                        child: firstShot == null
+                        child: retakeStage != null
+                            ? const Icon(
+                                Icons.keyboard_return_rounded,
+                                color: Colors.white70,
+                                size: 24,
+                              )
+                            : firstShot == null
                             ? const Icon(
                                 Icons.photo_library_outlined,
                                 color: Colors.white54,
