@@ -139,7 +139,10 @@ Future<void> runBuild(BuildInput input, BuildOutputBuilder output, {Set<String>?
     parallelJobs: parallelJobs,
     defines: {
       if (targetOS == OS.macOS) 'DEPLOYMENT_TARGET': '12.0',
-      if (targetOS == OS.iOS) 'DEPLOYMENT_TARGET': '15.0',
+      // Flutter 3.44 packages iOS native assets with MinimumOSVersion 13.0.
+      // Keep the Mach-O deployment target equal to the generated framework
+      // Info.plist value so App Store Connect accepts the bundle.
+      if (targetOS == OS.iOS) 'DEPLOYMENT_TARGET': '13.0',
       if (targetOS == OS.iOS || targetOS == OS.macOS) 'BUILD_TIFF': 'OFF',
       if (targetOS == OS.iOS || targetOS == OS.macOS) 'WITH_TIFF': 'OFF',
       if (targetOS == OS.iOS || targetOS == OS.macOS) 'BUILD_OPENJPEG': 'OFF',
