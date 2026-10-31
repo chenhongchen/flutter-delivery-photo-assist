@@ -941,6 +941,9 @@ class _CameraScreenState extends State<CameraScreen>
                     .take(3)
                     .join(' · ') ??
                 '';
+            final resultAge = _facts == null
+                ? null
+                : _clock.elapsedMilliseconds - _facts!.receivedAtMs;
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
               children: [
@@ -988,6 +991,17 @@ class _CameraScreenState extends State<CameraScreen>
                   '识别参考：${labels.isEmpty ? '暂未确认' : labels}',
                   style: const TextStyle(fontSize: 13, height: 1.7),
                 ),
+                Text(
+                  '识别状态：${_governor.budget.detectionEnabled ? '运行中' : '已暂停'} · '
+                  '调整原因：${_governor.reason}\n'
+                  '最近画面结果：${resultAge == null ? '暂无' : '${(resultAge / 1000).toStringAsFixed(1)} 秒前'}',
+                  style: const TextStyle(fontSize: 12, height: 1.7),
+                ),
+                if (_controller.modelError != null)
+                  Text(
+                    '模型错误：${_controller.modelError}',
+                    style: const TextStyle(fontSize: 11, color: Colors.red),
+                  ),
                 Text(
                   '文字参考：${text.isEmpty ? '暂无或已暂停' : text}',
                   style: const TextStyle(fontSize: 13, height: 1.7),

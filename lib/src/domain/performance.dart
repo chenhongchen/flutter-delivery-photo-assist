@@ -69,10 +69,23 @@ class PerformanceGovernor {
     changes.add({'atMs': nowMs, 'reason': why, ...budget.toJson()});
   }
 
+  void _limitHeavyWork(String why, int nowMs) {
+    final changed =
+        !_singleSample || !_framingThrottled || _tier == AnalysisTier.standard;
+    _singleSample = true;
+    _framingThrottled = true;
+    if (_tier == AnalysisTier.standard) {
+      _degrade(AnalysisTier.reduced, why, nowMs);
+    } else if (changed || reason != why) {
+      reason = why;
+      changes.add({'atMs': nowMs, 'reason': why, ...budget.toJson()});
+    }
+  }
+
   void observeDevice(Map<dynamic, dynamic> state, int nowMs) {
     final thermal = (state['thermalLevel'] as num?)?.toInt() ?? 0;
     if (thermal >= 2) {
-      _degrade(AnalysisTier.minimal, 'thermal_serious', nowMs);
+      _limitHeavyWork('thermal_serious', nowMs);
     } else if (thermal == 1 ||
         state['lowPower'] == true ||
         state['lowRam'] == true) {
@@ -125,8 +138,7 @@ class PerformanceGovernor {
     }
   }
 
-  void memoryPressure(int nowMs) =>
-      _degrade(AnalysisTier.minimal, 'memory_pressure', nowMs);
+  void memoryPressure(int nowMs) => _limitHeavyWork('memory_pressure', nowMs);
   Map<String, Object> toJson() => {
     ...budget.toJson(),
     'reason': reason,

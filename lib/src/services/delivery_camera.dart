@@ -244,6 +244,7 @@ class DeliveryCameraController {
       final inferenceClock = Stopwatch()..start();
       if (_detection && _detector != null && data != null) {
         detections = await _detector!.detect(frameTensor(data), _confidence);
+        modelError = null;
       }
       final inferenceMs = inferenceClock.elapsedMicroseconds / 1000;
       if (_disposed || !_active || generation != _generation || _captureBusy)

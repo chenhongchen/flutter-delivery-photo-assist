@@ -35,8 +35,10 @@ void main() {
     expect(governor.budget.framingEnabled, isTrue);
     expect(governor.budget.framingIntervalMs, 2500);
     governor.memoryPressure(10000);
-    expect(governor.budget.detectionEnabled, isFalse);
-    expect(governor.budget.framingEnabled, isFalse);
+    expect(governor.budget.detectionEnabled, isTrue);
+    expect(governor.budget.framingEnabled, isTrue);
+    expect(governor.budget.fps, 1);
+    expect(governor.budget.framingIntervalMs, 2500);
   });
 
   test('device pressure lowers work without oscillating on recovery', () {
@@ -46,12 +48,14 @@ void main() {
     governor.observeDevice({'thermalLevel': 0, 'lowPower': false}, 5000);
     expect(governor.budget.tier, AnalysisTier.reduced);
     governor.observeDevice({'thermalLevel': 2}, 10000);
-    expect(governor.budget.tier, AnalysisTier.minimal);
+    expect(governor.budget.tier, AnalysisTier.reduced);
+    expect(governor.budget.fps, 1);
+    expect(governor.budget.detectionEnabled, isTrue);
     governor.observeDevice({'thermalLevel': 0}, 20000);
-    expect(governor.budget.tier, AnalysisTier.minimal);
+    expect(governor.budget.tier, AnalysisTier.reduced);
   });
   test(
-    'expensive framing slows comparisons and memory pressure stops heavy work',
+    'expensive framing and memory pressure keep slower recognition active',
     () {
       final governor = PerformanceGovernor();
       for (var i = 0; i < 3; i++) {
@@ -61,7 +65,8 @@ void main() {
       expect(governor.budget.framingIntervalMs, 2500);
       expect(governor.budget.detectionEnabled, isTrue);
       governor.memoryPressure(5000);
-      expect(governor.budget.detectionEnabled, isFalse);
+      expect(governor.budget.detectionEnabled, isTrue);
+      expect(governor.budget.fps, 1);
       expect(governor.reason, 'memory_pressure');
     },
   );
