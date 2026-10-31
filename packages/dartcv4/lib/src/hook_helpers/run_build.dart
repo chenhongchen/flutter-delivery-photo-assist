@@ -115,11 +115,24 @@ Future<void> runBuild(BuildInput input, BuildOutputBuilder output, {Set<String>?
   final generator = _getGenerator(targetOS, platformDefines);
   logger.warning('Using generator: ${generator.name}');
 
+  final sourceDir = packagePath.uri.resolve('src');
+  final cmakeCache = File.fromUri(input.outputDirectory.resolve('CMakeCache.txt'));
+  if (await cmakeCache.exists()) {
+    final cachedSource = RegExp(
+      r'^CMAKE_HOME_DIRECTORY:INTERNAL=(.*)$',
+      multiLine: true,
+    ).firstMatch(await cmakeCache.readAsString())?.group(1)?.trim();
+    if (cachedSource != null && cachedSource != sourceDir.toFilePath()) {
+      logger.warning('Resetting stale CMake cache from $cachedSource');
+      await cmakeCache.delete();
+    }
+  }
+
   final builder = CMakeBuilder.create(
     logLevel: debugMode ? LogLevel.DEBUG : LogLevel.STATUS,
     appleArgs: const AppleBuilderArgs(enableArc: false, enableBitcode: false, enableVisibility: true),
     name: input.packageName,
-    sourceDir: packagePath.uri.resolve("src"),
+    sourceDir: sourceDir,
     targets: ['install'],
     buildLocal: false,
     generator: generator,
